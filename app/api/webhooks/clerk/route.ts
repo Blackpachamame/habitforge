@@ -1,7 +1,7 @@
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { Webhook } from "svix";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -16,11 +16,10 @@ export async function POST(req: Request) {
   const svix_signature = headerPayload.get("svix-signature");
 
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response("Headers de svix faltantes", { status: 400 });
+    return new Response("Headers faltantes", { status: 400 });
   }
 
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
+  const body = await req.text();
 
   const wh = new Webhook(WEBHOOK_SECRET);
   let evt: WebhookEvent;
@@ -39,11 +38,12 @@ export async function POST(req: Request) {
     const { id, email_addresses } = evt.data;
     const email = email_addresses[0].email_address;
 
-    await supabase.from("users").insert({
-      id,
-      email,
-      status: "inactive",
-    });
+    const { error } = await supabaseAdmin.from("users").insert({ id, email, status: "inactive" });
+
+    if (error) {
+      console.error("Error insertando usuario:", error);
+      return new Response("Error en DB", { status: 500 });
+    }
   }
 
   return new Response("ok", { status: 200 });
