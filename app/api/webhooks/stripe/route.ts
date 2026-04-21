@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const { error } = await supabaseAdmin
       .from("users")
       .update({ plan, status: "active" })
-      .eq("clerk_id", clerkId);
+      .eq("id", clerkId);
 
     if (error) {
       console.error("Error actualizando usuario:", error);
