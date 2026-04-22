@@ -13,14 +13,38 @@ const isPublicRoute = createRouteMatcher([
 const isOnboardingRoute = createRouteMatcher(["/onboarding(.*)"]);
 
 export default clerkMiddleware(async (auth, request) => {
-  // Onboarding requiere estar autenticado pero no redirige
-  if (isOnboardingRoute(request)) {
+  const { userId } = await auth();
+
+  // Rutas públicas — dejar pasar
+  if (isPublicRoute(request)) return;
+
+  // No autenticado — proteger
+  if (!userId) {
     await auth.protect();
-    return NextResponse.next();
+    return;
   }
 
-  if (!isPublicRoute(request)) {
-    await auth.protect();
+  // Consultar status del usuario en Supabase via fetch directo
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/users?id=eq.${userId}&select=status,plan`,
+    {
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+      },
+    },
+  );
+
+  const [user] = await res.json();
+
+  // Sin plan activo y no está en onboarding → redirigir
+  if (user?.status !== "active" && !isOnboardingRoute(request)) {
+    return NextResponse.redirect(new URL("/onboarding/plan", request.url));
+  }
+
+  // Con plan activo y quiere ir al onboarding → redirigir al dashboard
+  if (user?.status === "active" && isOnboardingRoute(request)) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 });
 
