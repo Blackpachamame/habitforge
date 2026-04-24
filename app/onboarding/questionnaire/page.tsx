@@ -1,8 +1,13 @@
+import QuestionnaireForm from "@/components/onboarding/questionnaire-form";
+
 export default function QuestionnairePage() {
   return (
-    <div className="max-w-lg mx-auto py-10 px-4">
-      <h1 className="text-2xl font-bold mb-2">Casi listo</h1>
-      <p className="text-gray-500">Cuestionario próximamente</p>
+    <div>
+      <h1 className="text-3xl font-bold text-center mb-2">Contanos sobre vos</h1>
+      <p className="text-center text-gray-500 mb-10">
+        Esto nos ayuda a personalizar tu experiencia
+      </p>
+      <QuestionnaireForm />
     </div>
   );
 }
